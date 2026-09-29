@@ -6,6 +6,7 @@ from app.models.schemas import (
     StudiesResponse,
 )
 from app.services.vector_store import vector_store_service
+from app.services.mongodb_service import mongodb_service
 
 router = APIRouter(prefix="/api", tags=["System & Metadata"])
 
@@ -16,10 +17,17 @@ router = APIRouter(prefix="/api", tags=["System & Metadata"])
     summary="System health check and index metrics"
 )
 async def health_check():
-    """Returns the operational status of the TrialLens engine, storage metrics, and active LLM configuration."""
+    """Returns the operational status of TrialLens, MongoDB connection, Gemini config, and index metrics."""
     stats = vector_store_service.get_stats()
-    active_provider = "openai" if settings.openai_api_key else "triallens-clinical-synthesizer-local"
-    
+
+    # Determine active LLM provider
+    if settings.google_api_key:
+        active_provider = f"google/{settings.gemini_model}"
+    elif settings.openai_api_key:
+        active_provider = f"openai/{settings.openai_model}"
+    else:
+        active_provider = "triallens-clinical-synthesizer-local"
+
     return HealthResponse(
         status="healthy",
         app_name=settings.app_name,
@@ -30,6 +38,37 @@ async def health_check():
         active_llm_provider=active_provider,
         storage_path=stats["storage_path"]
     )
+
+
+@router.get(
+    "/status",
+    summary="Extended status: MongoDB + Gemini connectivity"
+)
+async def extended_status():
+    """Returns detailed connectivity status for MongoDB and Gemini AI."""
+    stats = vector_store_service.get_stats()
+    mongo_count = await mongodb_service.get_document_count()
+
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "llm": {
+            "provider": "Google Gemini" if settings.google_api_key else "Local Synthesizer",
+            "model": settings.gemini_model if settings.google_api_key else "N/A",
+            "configured": bool(settings.google_api_key),
+        },
+        "mongodb": {
+            "connected": mongodb_service.is_connected,
+            "database": settings.mongodb_db_name,
+            "document_count": mongo_count,
+        },
+        "vector_store": {
+            "total_documents": stats["total_documents"],
+            "total_chunks": stats["total_chunks"],
+            "total_embeddings": stats["total_embeddings"],
+            "storage_path": stats["storage_path"],
+        }
+    }
 
 
 @router.get(

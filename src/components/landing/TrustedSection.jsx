@@ -1,5 +1,13 @@
 import React from 'react';
-import { TRUSTED_COMPANIES } from '../../data/mockData';
+
+const TRUSTED_COMPANIES = [
+  { name: "Pfizer", style: "tracking-wider font-bold text-xl text-blue-400" },
+  { name: "NOVARTIS", style: "tracking-widest font-semibold text-lg text-amber-500" },
+  { name: "Roche", style: "tracking-wide font-extrabold text-xl text-blue-300" },
+  { name: "Johnson & Johnson", style: "tracking-tight italic font-bold text-lg text-rose-500" },
+  { name: "MERCK", style: "tracking-widest font-bold text-lg text-emerald-400" },
+  { name: "AstraZeneca", style: "tracking-wide font-semibold text-xl text-purple-400" },
+];
 
 export default function TrustedSection() {
   const stats = [

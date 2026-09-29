@@ -1,37 +1,62 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_DOCUMENTS, RECENT_QUESTIONS, PRESET_ANSWERS, INITIAL_SAVED_ANSWERS } from '../data/mockData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import * as api from '../services/api';
 
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  // Documents state with localStorage fallback
-  const [documents, setDocuments] = useState(() => {
-    const saved = localStorage.getItem('triallens_documents');
-    return saved ? JSON.parse(saved) : INITIAL_DOCUMENTS;
-  });
+  // Clear any legacy mock documents from localStorage
+  const getInitialDocuments = () => {
+    try {
+      const saved = localStorage.getItem('triallens_documents');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // If it contains mock doc IDs like doc-1, doc-2, discard it
+        if (Array.isArray(parsed) && parsed.some(d => d.id === 'doc-1' || d.id === 'doc-2')) {
+          localStorage.removeItem('triallens_documents');
+          return [];
+        }
+        return parsed;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
+  };
 
-  // Saved answers
+  // Documents state (Real data only, synced with MongoDB)
+  const [documents, setDocuments] = useState(getInitialDocuments);
+
+  // Saved answers (Real user-saved answers only)
   const [savedAnswers, setSavedAnswers] = useState(() => {
-    const saved = localStorage.getItem('triallens_saved_answers');
-    return saved ? JSON.parse(saved) : INITIAL_SAVED_ANSWERS;
+    try {
+      const saved = localStorage.getItem('triallens_saved_answers');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.some(s => s.id === 'saved-1' || s.id === 'saved-2')) {
+          localStorage.removeItem('triallens_saved_answers');
+          return [];
+        }
+        return parsed;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
   });
 
-  // Recent questions
-  const [recentQuestions, setRecentQuestions] = useState(() => {
-    const saved = localStorage.getItem('triallens_recent_questions');
-    return saved ? JSON.parse(saved) : RECENT_QUESTIONS;
-  });
+  // Recent questions (Populated from MongoDB real-time query history)
+  const [recentQuestions, setRecentQuestions] = useState([]);
 
   // Current question in Ask page
-  const [currentQuery, setCurrentQuery] = useState(
-    "What were the most common adverse events reported during the Phase 3 trial of Drug X?"
-  );
-  const [currentAnswer, setCurrentAnswer] = useState(PRESET_ANSWERS["adverse-events"]);
+  const [currentQuery, setCurrentQuery] = useState("");
+  const [currentAnswer, setCurrentAnswer] = useState(null);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
   const [generationStep, setGenerationStep] = useState("");
+  const [backendAvailable, setBackendAvailable] = useState(false);
+  const [backendError, setBackendError] = useState(null);
 
   // Document Viewer state
-  const [activeViewerDoc, setActiveViewerDoc] = useState(PRESET_ANSWERS["adverse-events"].viewerDoc);
+  const [activeViewerDoc, setActiveViewerDoc] = useState(null);
   const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
 
   // Upload queue
@@ -41,13 +66,13 @@ export function AppProvider({ children }) {
   const [userProfile, setUserProfile] = useState(() => {
     const saved = localStorage.getItem('triallens_user_profile');
     return saved ? JSON.parse(saved) : {
-      name: "Jager Jackson",
-      role: "Researcher",
-      email: "jager.jackson@bioresearch.org",
-      initials: "JJ",
-      institution: "Aura Clinical Research Institute",
-      department: "Oncology Phase 3 Development",
-      memberSince: "Jan 2025"
+      name: "Clinical Researcher",
+      role: "Lead Investigator",
+      email: "researcher@triallens.internal",
+      initials: "CR",
+      institution: "TrialLens Clinical Intelligence",
+      department: "Clinical Research & Oncology",
+      memberSince: "2026"
     };
   });
 
@@ -79,46 +104,124 @@ export function AppProvider({ children }) {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
 
-  // Notification items for Topbar
+  // Live Notifications
   const [notifications, setNotifications] = useState([
     {
-      id: "n-1",
-      title: "New Safety Bulletin parsed",
-      description: "Safety_Bulletin_2023.pdf finished indexing with 12 citations.",
-      time: "10m ago",
+      id: "n-system-ready",
+      title: "TrialLens Real-Time System Active",
+      description: "Google Gemini RAG and MongoDB Atlas persistence are online.",
+      time: "Just now",
       read: false,
       type: "success"
-    },
-    {
-      id: "n-2",
-      title: "Query verified by 3 sources",
-      description: "Adverse events for Drug X mapped to Study ABC Phase 3.",
-      time: "1h ago",
-      read: false,
-      type: "info"
-    },
-    {
-      id: "n-3",
-      title: "System update v1.0.0",
-      description: "High-precision OCR indexing enabled for clinical tables.",
-      time: "1d ago",
-      read: true,
-      type: "system"
     }
   ]);
 
-  // Persist to localStorage
-  useEffect(() => {
-    localStorage.setItem('triallens_documents', JSON.stringify(documents));
-  }, [documents]);
+  // Toast dispatch helper
+  const addToast = useCallback(({ title, message, type = 'info', duration = 3800 }) => {
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
+    const newToast = { id, title, message, type };
+    setToasts((prev) => [...prev, newToast]);
 
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, duration);
+    }
+    return id;
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // ── Helper to format dates cleanly ─────────────────────────────────────────
+  const formatTimestamp = (dateStr) => {
+    if (!dateStr) return 'Just now';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+        ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      return 'Recently';
+    }
+  };
+
+  // ── Real data fetchers from MongoDB via backend ────────────────────────────
+  const refreshDocuments = useCallback(async () => {
+    try {
+      const result = await api.listDocuments();
+      if (result && Array.isArray(result.documents)) {
+        const backendDocs = result.documents.map(d => ({
+          id: d.document_id,
+          name: d.document_name,
+          type: d.document_type ? d.document_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Clinical Document',
+          rawType: d.document_type,
+          drugProduct: d.extra_metadata?.drug_product || d.study_id || 'Clinical Trial',
+          phase: d.extra_metadata?.phase || 'Phase 3',
+          year: d.created_at ? new Date(d.created_at).getFullYear().toString() : new Date().getFullYear().toString(),
+          pages: d.total_pages || 1,
+          uploadedOn: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently',
+          size: `${((d.file_size_bytes || 1024) / (1024 * 1024)).toFixed(1)} MB`,
+          status: 'Verified',
+          fileType: d.document_name?.endsWith('.docx') ? 'docx' : 'pdf',
+          abstract: `Indexed clinical record. ${d.total_chunks || 0} chunks in vector index.`,
+          study_id: d.study_id,
+          total_chunks: d.total_chunks,
+        }));
+        setDocuments(backendDocs);
+        localStorage.setItem('triallens_documents', JSON.stringify(backendDocs));
+      }
+    } catch (err) {
+      console.warn('Could not refresh documents from MongoDB:', err.message);
+    }
+  }, []);
+
+  const refreshHistory = useCallback(async () => {
+    try {
+      const result = await api.getQueryHistory(20);
+      if (result && Array.isArray(result.history)) {
+        const historyList = result.history.map((h, idx) => ({
+          id: h._id || `q-${idx}`,
+          question: h.question,
+          timestamp: formatTimestamp(h.created_at),
+          status: (h.confidence_score > 0 || (h.citation_count && h.citation_count > 0)) ? 'Answered' : 'Insufficient Evidence',
+          model_used: h.model_used || 'google/gemini',
+          confidence_score: h.confidence_score,
+          sourceCount: h.citation_count || 0,
+          rawAnswer: h.answer,
+        }));
+        setRecentQuestions(historyList);
+      }
+    } catch (err) {
+      console.warn('Could not refresh history from MongoDB:', err.message);
+    }
+  }, []);
+
+  // ── Initial load on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      try {
+        const status = await api.getStatus();
+        if (cancelled) return;
+        setBackendAvailable(true);
+        setBackendError(null);
+        await Promise.all([refreshDocuments(), refreshHistory()]);
+      } catch (err) {
+        if (cancelled) return;
+        setBackendAvailable(false);
+        setBackendError('Backend not reachable');
+        console.warn('Backend offline:', err.message);
+      }
+    }
+    init();
+    return () => { cancelled = true; };
+  }, [refreshDocuments, refreshHistory]);
+
+  // Persist settings & userProfile
   useEffect(() => {
     localStorage.setItem('triallens_saved_answers', JSON.stringify(savedAnswers));
   }, [savedAnswers]);
-
-  useEffect(() => {
-    localStorage.setItem('triallens_recent_questions', JSON.stringify(recentQuestions));
-  }, [recentQuestions]);
 
   useEffect(() => {
     localStorage.setItem('triallens_user_profile', JSON.stringify(userProfile));
@@ -126,7 +229,6 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem('triallens_settings', JSON.stringify(settings));
-    // Apply dark class
     if (settings.theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else if (settings.theme === 'light') {
@@ -146,24 +248,6 @@ export function AppProvider({ children }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Toast dispatch helper
-  const addToast = ({ title, message, type = 'info', duration = 3800 }) => {
-    const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
-    const newToast = { id, title, message, type };
-    setToasts((prev) => [...prev, newToast]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        removeToast(id);
-      }, duration);
-    }
-    return id;
-  };
-
-  const removeToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
-
   // Document actions
   const addDocument = (newDoc) => {
     setDocuments((prev) => [newDoc, ...prev]);
@@ -174,187 +258,164 @@ export function AppProvider({ children }) {
     });
   };
 
-  const deleteDocument = (id) => {
+  const deleteDocument = async (id) => {
     const docToDelete = documents.find(d => d.id === id);
     setDocuments((prev) => prev.filter((d) => d.id !== id));
-    addToast({
-      title: "Document Deleted",
-      message: `${docToDelete?.name || 'Document'} has been removed from library.`,
-      type: "info"
-    });
+    try {
+      await api.deleteDocument(id);
+      addToast({
+        title: "Document Deleted",
+        message: `${docToDelete?.name || 'Document'} removed from vector store and MongoDB.`,
+        type: "info"
+      });
+      await refreshDocuments();
+    } catch (err) {
+      addToast({
+        title: "Deletion Note",
+        message: `Removed from UI view: ${err.message}`,
+        type: "info"
+      });
+    }
   };
 
-  // Open Document Viewer
-  const openDocumentViewer = (docOrName, page = 42) => {
+  // Open Document Viewer with real excerpt
+  const openDocumentViewer = (docOrName, page = 1) => {
     let docDetails = null;
     if (typeof docOrName === 'string') {
-      const found = documents.find(d => d.name === docOrName);
+      const found = documents.find(d => d.name === docOrName || d.id === docOrName);
       if (found) {
         docDetails = {
           name: found.name,
           currentPage: page,
-          totalPages: found.pages || 245,
-          sectionTitle: "6.3 Adverse Events & Safety Findings",
-          highlightText: "The most common adverse events in the Phase 3 trial were nausea (12.4%), headache (10.1%), fatigue (8.7%), diarrhea (6.3%) and upper respiratory tract infection (5.9%).",
-          tableTitle: `Table 12. ${found.drugProduct} Clinical Data Matrix`,
+          totalPages: found.pages || 1,
+          sectionTitle: found.type || "Clinical Documentation",
+          highlightText: found.abstract || `Verified clinical report ${found.name}.`,
+          tableTitle: `Study Metadata: ${found.study_id || 'Verified Study'}`,
           tableRows: [
-            { event: "Nausea", incidence: "12.4%" },
-            { event: "Headache", incidence: "10.1%" },
-            { event: "Fatigue", incidence: "8.7%" },
-            { event: "Diarrhea", incidence: "6.3%" },
-            { event: "Upper respiratory tract infection", incidence: "5.9%" }
+            { event: "Study Identifier", incidence: found.study_id || "N/A" },
+            { event: "Total Ingested Chunks", incidence: `${found.total_chunks || 0} chunks` },
+            { event: "Verification Status", incidence: "Grounded in MongoDB" }
           ],
-          footerText: `${found.name} — Verified Clinical Documentation`,
-          pagesThumbnails: [Math.max(1, page - 1), page, page + 1]
+          footerText: `${found.name} — Real-Time Study Record`,
+          pagesThumbnails: [1]
         };
       }
     } else if (docOrName) {
       docDetails = docOrName;
     }
 
-    if (!docDetails) {
-      docDetails = PRESET_ANSWERS["adverse-events"].viewerDoc;
+    if (docDetails) {
+      setActiveViewerDoc(docDetails);
+      setIsViewerModalOpen(true);
     }
-
-    setActiveViewerDoc(docDetails);
-    setIsViewerModalOpen(true);
   };
 
   const closeDocumentViewer = () => {
     setIsViewerModalOpen(false);
   };
 
-  // Ask Question / Execute AI synthesis
-  const executeAskQuestion = (questionText) => {
+  // ── Ask Question — Real Gemini API call ──────────────────────────────────
+  const executeAskQuestion = useCallback(async (questionText) => {
     if (!questionText || !questionText.trim()) return;
     const cleanText = questionText.trim();
     setCurrentQuery(cleanText);
     setIsGeneratingAnswer(true);
 
-    // Dynamic matching to pre-set answers or rich generated answer
-    const lower = cleanText.toLowerCase();
-    let selectedAnswer = null;
-
-    if (lower.includes("efficacy") || lower.includes("phase 3 efficacy") || lower.includes("results in phase 3")) {
-      selectedAnswer = PRESET_ANSWERS["efficacy-phase3"];
-    } else if (lower.includes("compare") || (lower.includes("drug x") && lower.includes("drug y"))) {
-      selectedAnswer = PRESET_ANSWERS["compare-drugs"];
-    } else if (lower.includes("safety update") || lower.includes("safety bulletin") || lower.includes("updates")) {
-      selectedAnswer = PRESET_ANSWERS["safety-updates"];
-    } else if (lower.includes("adverse") || lower.includes("common") || lower.includes("headache") || lower.includes("nausea")) {
-      selectedAnswer = PRESET_ANSWERS["adverse-events"];
-    } else {
-      // Dynamic generated response anchored to documents
-      selectedAnswer = {
-        question: cleanText,
-        timestamp: "Just now",
-        sourceCount: 2,
-        leadText: `Synthesized clinical evidence for: "${cleanText}" across current document repository:`,
-        bullets: [
-          { name: "Verified Finding", stat: "Statistically consistent with Protocol ABC-04 (p < 0.02)" },
-          { name: "Population Sample", stat: "N = 840 subjects across multi-center Phase 3 cohort" },
-          { name: "Clinical Safety Index", stat: "Within anticipated therapeutic window; zero Grade 4 toxicities" },
-          { name: "Regulatory Status", stat: "Cross-referenced in CTD Section 2.5 Clinical Overview" }
-        ],
-        summary: `Evidence parsed across Study_ABC_Phase3.pdf and DrugX_Label.pdf confirms relevant data points for this inquiry. All results maintain strict source verification.`,
-        warning: "This answer is generated only from the provided documents. Please verify the information using the cited sources.",
-        sources: [
-          {
-            id: "src-dyn-1",
-            docId: "doc-1",
-            name: "Study_ABC_Phase3.pdf",
-            section: "Summary of Clinical Evidence",
-            page: 42,
-            isPrimary: true,
-            tag: "Primary Source",
-            quote: "Clinical observations align with prospective criteria established in the primary statistical plan."
-          },
-          {
-            id: "src-dyn-2",
-            docId: "doc-2",
-            name: "DrugX_Label.pdf",
-            section: "Special Populations",
-            page: 18,
-            isPrimary: false,
-            quote: "Prescribing parameters and outcome metrics correspond with controlled investigation archives."
-          }
-        ],
-        viewerDoc: PRESET_ANSWERS["adverse-events"].viewerDoc,
-        followUps: [
-          `Are there further safety exclusions regarding ${cleanText.slice(0, 30)}?`,
-          "What were the primary endpoints in this cohort?",
-          "How was patient compliance verified during the study period?"
-        ]
-      };
-    }
-
-    // Step sequence animation
     const steps = [
-      "Searching 120 clinical documents...",
-      "Extracting statistical tables & study endpoints...",
-      "Cross-referencing citations with Study_ABC_Phase3.pdf...",
-      "Finalizing evidence-grounded answer..."
+      "Querying TrialLens RAG index...",
+      "Extracting verified clinical chunks...",
+      "Calling Google Gemini for grounded synthesis...",
+      "Mapping source citations and confidence scores..."
     ];
-
     steps.forEach((step, idx) => {
-      setTimeout(() => {
-        setGenerationStep(step);
-      }, idx * 300);
+      setTimeout(() => setGenerationStep(step), idx * 400);
     });
 
-    setTimeout(() => {
-      setCurrentAnswer({
-        ...selectedAnswer,
+    try {
+      const result = await api.askQuestion(cleanText, { topK: 4, temperature: 0.0 });
+
+      // Map backend response → frontend answer
+      const sources = (result.citations || []).map((c, i) => ({
+        id: `src-${i}`,
+        docId: c.document_id,
+        name: c.document_name,
+        section: c.section,
+        page: c.page_number,
+        isPrimary: i === 0,
+        tag: i === 0 ? 'Primary Source' : 'Supporting Source',
+        quote: c.snippet?.slice(0, 220) + (c.snippet?.length > 220 ? '...' : ''),
+        relevance_score: c.relevance_score,
+        citation_tag: c.citation_tag,
+      }));
+
+      const realAnswer = {
         question: cleanText,
-        timestamp: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      });
-      if (selectedAnswer.viewerDoc) {
-        setActiveViewerDoc(selectedAnswer.viewerDoc);
-      }
+        timestamp: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        sourceCount: sources.length,
+        leadText: result.answer,
+        bullets: [],
+        summary: `Confidence: ${Math.round((result.confidence_score || 0) * 100)}% · Model: ${result.model_used || 'google/gemini'} · ${result.evidence_chunks_consulted || 0} real evidence chunk(s) consulted.`,
+        warning: 'This answer is synthesized directly from verified documents indexed in your library.',
+        sources,
+        viewerDoc: sources.length > 0 ? {
+          name: sources[0].name,
+          currentPage: sources[0].page,
+          totalPages: 10,
+          sectionTitle: sources[0].section,
+          highlightText: sources[0].quote,
+          footerText: `${sources[0].name} — Page ${sources[0].page}`,
+          tableTitle: `Citation: ${sources[0].citation_tag}`,
+          tableRows: [
+            { event: "Relevance Score", incidence: `${Math.round((sources[0].relevance_score || 0) * 100)}%` },
+            { event: "Study Document", incidence: sources[0].name },
+            { event: "Section", incidence: sources[0].section }
+          ]
+        } : null,
+        followUps: sources.length > 0 ? [
+          `What are other endpoints reported in ${sources[0].name}?`,
+          `Are there adverse reaction warnings in ${sources[0].name}?`,
+          `What patient populations were included in this study?`
+        ] : [],
+        isRealData: true,
+      };
+
+      setCurrentAnswer(realAnswer);
+      if (realAnswer.viewerDoc) setActiveViewerDoc(realAnswer.viewerDoc);
       setIsGeneratingAnswer(false);
-      setGenerationStep("");
+      setGenerationStep('');
 
-      // Add to recent questions if not already present
-      setRecentQuestions((prev) => {
-        const filtered = prev.filter(q => q.question.toLowerCase() !== cleanText.toLowerCase());
-        return [
-          {
-            id: `q-${Date.now()}`,
-            question: cleanText,
-            timestamp: "Just now",
-            status: "Answered",
-            drug: "Drug X",
-            sourceCount: selectedAnswer.sourceCount || 3
-          },
-          ...filtered
-        ].slice(0, 10);
-      });
-
-      // Auto-save if setting enabled
-      if (settings.autoSaveAnswers) {
-        const isAlreadySaved = savedAnswers.some(s => s.question.toLowerCase() === cleanText.toLowerCase());
-        if (!isAlreadySaved) {
-          const newSave = {
-            id: `saved-${Date.now()}`,
-            question: cleanText,
-            snippet: selectedAnswer.leadText + " " + selectedAnswer.bullets.map(b => `${b.name} (${b.stat})`).join(", "),
-            drugProduct: "Drug X",
-            sourceCount: selectedAnswer.sourceCount || 3,
-            savedDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-            phase: "Phase 3",
-            key: "adverse-events"
-          };
-          setSavedAnswers(prev => [newSave, ...prev]);
-        }
-      }
+      // Refresh real query history from MongoDB
+      await refreshHistory();
 
       addToast({
-        title: "Answer Generated",
-        message: `Verified against ${selectedAnswer.sourceCount} clinical sources.`,
-        type: "success"
+        title: 'Answer Synthesized',
+        message: `Google Gemini answered using ${sources.length} clinical source(s).`,
+        type: 'success'
       });
-    }, 1300);
-  };
+    } catch (err) {
+      console.error('Backend query failed:', err);
+      setIsGeneratingAnswer(false);
+      setGenerationStep('');
+      setCurrentAnswer({
+        question: cleanText,
+        timestamp: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
+        sourceCount: 0,
+        leadText: `Unable to complete query: ${err.message || 'Connection error'}. Please verify backend status and that clinical documents are indexed.`,
+        bullets: [],
+        summary: 'Query failed. Please check backend connection.',
+        warning: 'Backend connection error.',
+        sources: [],
+        viewerDoc: null,
+        followUps: [],
+        isRealData: true,
+      });
+      addToast({
+        title: 'Query Failed',
+        message: err.message || 'Could not reach backend.',
+        type: 'error'
+      });
+    }
+  }, [refreshHistory, addToast]);
 
   // Saved answers management
   const toggleSaveCurrentAnswer = () => {
@@ -371,9 +432,9 @@ export function AppProvider({ children }) {
       const newSaved = {
         id: `saved-${Date.now()}`,
         question: currentAnswer.question,
-        snippet: currentAnswer.leadText + " " + (currentAnswer.bullets || []).map(b => `${b.name} (${b.stat})`).join(", "),
-        drugProduct: "Drug X",
-        sourceCount: currentAnswer.sources ? currentAnswer.sources.length : 3,
+        snippet: currentAnswer.leadText,
+        drugProduct: currentAnswer.sources?.[0]?.name || "Clinical Record",
+        sourceCount: currentAnswer.sources ? currentAnswer.sources.length : 0,
         savedDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
         phase: "Phase 3"
       };
@@ -395,76 +456,70 @@ export function AppProvider({ children }) {
     });
   };
 
-  // Simulated File Upload Handling
-  const addUploadFiles = (fileList, category = "Clinical Trial Report", drugProduct = "Drug X", phase = "Phase 3") => {
+  // ── Real File Upload — sends to FastAPI backend & MongoDB ─────────────────
+  const addUploadFiles = useCallback((fileList, category = 'Clinical Trial Report', drugProduct = 'TL-802', phase = 'Phase 3') => {
+    const categoryToType = {
+      'Clinical Trial Report': 'clinical_trial_report',
+      'Drug Label': 'drug_label',
+      'Safety Bulletin': 'safety_bulletin',
+      'Investigator Brochure': 'other',
+      'Regulatory Document': 'other',
+    };
+
     const newItems = Array.from(fileList).map((file, idx) => ({
       id: `up-${Date.now()}-${idx}`,
       name: file.name,
       size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
       type: category,
-      drugProduct: drugProduct || "Drug X",
-      phase: phase || "Phase 3",
+      drugProduct: drugProduct || 'Clinical Product',
+      phase: phase || 'Phase 3',
       progress: 5,
-      status: "Uploading",
+      status: 'Uploading',
       fileType: file.name.endsWith('.docx') ? 'docx' : 'pdf',
-      pages: Math.floor(Math.random() * 180) + 20
+      pages: 1,
+      _file: file,
     }));
 
     setUploadQueue(prev => [...newItems, ...prev]);
-    addToast({
-      title: "Upload Started",
-      message: `Uploading ${newItems.length} clinical document${newItems.length > 1 ? 's' : ''}...`,
-      type: "info"
-    });
+    addToast({ title: 'Upload Started', message: `Uploading ${newItems.length} document(s) to MongoDB and vector index...`, type: 'info' });
 
-    // Simulate progressive progress
     newItems.forEach((item) => {
-      let currentProgress = 5;
-      const interval = setInterval(() => {
-        currentProgress += Math.floor(Math.random() * 25) + 15;
-        if (currentProgress >= 100) {
-          clearInterval(interval);
-          setUploadQueue(prev =>
-            prev.map(q => q.id === item.id ? { ...q, progress: 100, status: "Processing" } : q)
-          );
+      const docType = categoryToType[item.type] || 'clinical_trial_report';
 
-          // Transition from Processing to Completed
-          setTimeout(() => {
-            setUploadQueue(prev =>
-              prev.map(q => q.id === item.id ? { ...q, status: "Completed" } : q)
-            );
+      let fakeProgress = 15;
+      const progressInterval = setInterval(() => {
+        fakeProgress = Math.min(fakeProgress + 15, 85);
+        setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, progress: fakeProgress } : q));
+      }, 300);
 
-            // Automatically add to documents repository!
-            const newDoc = {
-              id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-              name: item.name,
-              type: item.type,
-              drugProduct: item.drugProduct,
-              phase: item.phase,
-              year: "2026",
-              pages: item.pages,
-              uploadedOn: "Just now",
-              size: item.size,
-              status: "Verified",
-              fileType: item.fileType,
-              abstract: `Uploaded clinical document for ${item.drugProduct} (${item.type}). Indexed into RAG vector repository with complete table parsing.`
-            };
-            addDocument(newDoc);
-          }, 1200);
-        } else {
-          setUploadQueue(prev =>
-            prev.map(q => q.id === item.id ? { ...q, progress: currentProgress } : q)
-          );
-        }
-      }, 400);
+      api.uploadDocument(item._file, { studyId: 'STUDY-REAL', documentType: docType, title: item.name })
+        .then(async (result) => {
+          clearInterval(progressInterval);
+          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, progress: 100, status: 'Processing' } : q));
+
+          setTimeout(async () => {
+            setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'Completed' } : q));
+            await refreshDocuments();
+            addToast({
+              title: 'Document Ingested & Saved',
+              message: `${result.document_name} indexed with ${result.total_chunks} chunks and stored in MongoDB.`,
+              type: 'success'
+            });
+          }, 600);
+        })
+        .catch(err => {
+          clearInterval(progressInterval);
+          setUploadQueue(prev => prev.map(q => q.id === item.id ? { ...q, status: 'Failed', progress: 0 } : q));
+          addToast({ title: 'Upload Failed', message: err.message || 'Could not upload document.', type: 'error' });
+        });
     });
-  };
+  }, [refreshDocuments, addToast]);
 
   const clearUploadQueue = () => {
     setUploadQueue([]);
     addToast({
       title: "Upload Queue Cleared",
-      message: "Upload history was reset.",
+      message: "Upload list reset.",
       type: "info"
     });
   };
@@ -473,9 +528,13 @@ export function AppProvider({ children }) {
     <AppContext.Provider
       value={{
         documents,
+        backendAvailable,
+        backendError,
         setDocuments,
         addDocument,
         deleteDocument,
+        refreshDocuments,
+        refreshHistory,
         savedAnswers,
         setSavedAnswers,
         toggleSaveCurrentAnswer,

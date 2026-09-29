@@ -30,7 +30,7 @@ export default function DashboardPage() {
 
         <div className="text-left sm:text-right">
           <p className="text-xs sm:text-sm font-semibold text-slate-300">
-            Mon, 22 Sep 2026
+            {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </p>
           <p className="text-xs text-blue-400 font-medium">
             Let's accelerate evidence-based research.

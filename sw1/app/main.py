@@ -6,15 +6,28 @@ from fastapi.responses import RedirectResponse
 from app.config import settings
 from app.routes import documents_router, query_router, system_router
 from app.services.vector_store import vector_store_service
+from app.services.mongodb_service import mongodb_service
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure index is loaded
+    # ── Startup ────────────────────────────────────────────────────────────
+    print("[INFO] TrialLens starting up...")
+
+    # Connect to MongoDB
+    await mongodb_service.connect()
+
+    # Load local vector index from disk (JSON cache)
     vector_store_service.load_index()
+
+    print("[OK] TrialLens ready.")
     yield
-    # Shutdown: persist index
+
+    # ── Shutdown ───────────────────────────────────────────────────────────
+    print("[INFO] TrialLens shutting down...")
     vector_store_service.save_index()
+    await mongodb_service.disconnect()
+    print("[INFO] TrialLens shutdown complete.")
 
 
 app = FastAPI(
@@ -23,7 +36,7 @@ app = FastAPI(
     description="""
 # TrialLens API 🔬
 
-TrialLens is an AI-powered clinical research assistant designed for pharmaceutical companies.
+TrialLens is an AI-powered clinical research assistant for pharmaceutical companies.
 It enables researchers to ask natural-language questions across **clinical trial reports**,
 **drug labels**, and **safety bulletins**, receiving **evidence-grounded answers with exact source citations**
 (Document name, Study ID, Section heading, and Page number).
@@ -32,16 +45,17 @@ It enables researchers to ask natural-language questions across **clinical trial
 - **Document Ingestion**: Upload PDF/text files or ingest raw Markdown with automatic section header detection and page extraction.
 - **Evidence-Preserving Chunking**: Chunks text with sliding windows while attaching granular study metadata.
 - **Dense Clinical Vector Search**: High-precision semantic retrieval with multi-faceted metadata filtering (by study, document type).
-- **Grounded Clinical Synthesis**: RAG answering pipeline strictly grounded on retrieved evidence with structured citations.
+- **Grounded Clinical Synthesis**: RAG answering pipeline powered by **Google Gemini** strictly grounded on retrieved evidence with structured citations.
+- **MongoDB Persistence**: Document metadata and query history stored in MongoDB Atlas for real-time data access.
 - **Metadata Management**: Health checks and study aggregation tracking.
     """,
     lifespan=lifespan
 )
 
-# CORS support for web clients (e.g. Streamlit, React)
+# CORS support for web clients (React frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

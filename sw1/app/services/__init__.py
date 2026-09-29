@@ -2,6 +2,7 @@ from app.services.parser import DocumentParser, ParsedDocument, ParsedSection
 from app.services.chunker import ClinicalChunker, TextChunk
 from app.services.vector_store import VectorStoreService, vector_store_service
 from app.services.rag_engine import RAGEngine, rag_engine_service
+from app.services.mongodb_service import MongoDBService, mongodb_service
 
 __all__ = [
     "DocumentParser",
@@ -13,4 +14,6 @@ __all__ = [
     "vector_store_service",
     "RAGEngine",
     "rag_engine_service",
+    "MongoDBService",
+    "mongodb_service",
 ]

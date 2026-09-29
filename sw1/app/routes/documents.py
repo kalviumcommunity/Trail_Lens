@@ -18,6 +18,7 @@ from app.models.schemas import (
 from app.services.parser import DocumentParser
 from app.services.chunker import ClinicalChunker
 from app.services.vector_store import vector_store_service
+from app.services.mongodb_service import mongodb_service
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 chunker = ClinicalChunker(
@@ -40,15 +41,16 @@ async def upload_document(
 ):
     """
     Accepts clinical trial reports, drug labels, or safety bulletins in PDF, TXT, or MD format.
-    Extracts text, preserves section & page structure, computes embeddings, and stores in the vector index.
+    Extracts text, preserves section & page structure, computes embeddings, stores in vector index,
+    and persists document metadata to MongoDB.
     """
     filename = file.filename or "untitled_doc"
     ext = os.path.splitext(filename)[1].lower()
-    
-    if ext not in [".pdf", ".txt", ".md"]:
+
+    if ext not in [".pdf", ".txt", ".md", ".docx"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported file type '{ext}'. Supported formats: .pdf, .txt, .md"
+            detail=f"Unsupported file type '{ext}'. Supported formats: .pdf, .txt, .md, .docx"
         )
 
     file_bytes = await file.read()
@@ -71,6 +73,8 @@ async def upload_document(
     try:
         if ext == ".pdf":
             parsed = DocumentParser.parse_pdf(file_bytes, filename=doc_title)
+        elif ext == ".docx":
+            parsed = DocumentParser.parse_docx(file_bytes, filename=doc_title)
         else:
             text_str = file_bytes.decode("utf-8", errors="replace")
             parsed = DocumentParser.parse_text(text_str, filename=doc_title)
@@ -100,8 +104,11 @@ async def upload_document(
         extra_metadata={"saved_filename": saved_filename}
     )
 
-    # Index into vector store
+    # Index into vector store (in-memory + JSON)
     vector_store_service.add_document(doc_meta, chunks)
+
+    # ✅ Persist metadata to MongoDB
+    await mongodb_service.save_document(doc_meta.model_dump())
 
     return DocumentUploadResponse(
         document_id=doc_id,
@@ -110,7 +117,7 @@ async def upload_document(
         document_type=document_type,
         total_pages=parsed.total_pages,
         total_chunks=len(chunks),
-        message=f"Document successfully parsed, chunked into {len(chunks)} chunks, and indexed.",
+        message=f"Document successfully parsed, chunked into {len(chunks)} chunks, indexed, and saved to MongoDB.",
         created_at=doc_meta.created_at
     )
 
@@ -153,6 +160,9 @@ async def ingest_raw_text(payload: TextIngestRequest):
 
     vector_store_service.add_document(doc_meta, chunks)
 
+    # ✅ Persist metadata to MongoDB
+    await mongodb_service.save_document(doc_meta.model_dump())
+
     return DocumentUploadResponse(
         document_id=doc_id,
         document_name=payload.title,
@@ -171,7 +181,27 @@ async def ingest_raw_text(payload: TextIngestRequest):
     summary="List all indexed pharmaceutical documents"
 )
 async def list_documents():
-    """Returns a list of all clinical trial reports, drug labels, and bulletins currently indexed."""
+    """
+    Returns documents from MongoDB (if connected), otherwise falls back to
+    the in-memory vector store. This ensures real-time data across restarts.
+    """
+    # Prefer MongoDB for real-time persistence
+    if mongodb_service.is_connected:
+        mongo_docs = await mongodb_service.list_documents()
+        if mongo_docs:
+            # Convert raw dicts back to DocumentMetadata for consistent response
+            docs = []
+            for d in mongo_docs:
+                try:
+                    docs.append(DocumentMetadata(**d))
+                except Exception:
+                    pass
+            return DocumentListResponse(
+                total_documents=len(docs),
+                documents=docs
+            )
+
+    # Fallback: in-memory vector store
     docs = vector_store_service.list_documents()
     return DocumentListResponse(
         total_documents=len(docs),
@@ -185,8 +215,21 @@ async def list_documents():
     summary="Get details and sample chunks of a document"
 )
 async def get_document_detail(document_id: str):
-    """Retrieves document metadata and its constituent evidence chunks."""
-    doc_meta = vector_store_service.get_document(document_id)
+    """Retrieves document metadata from MongoDB and its constituent evidence chunks from the vector store."""
+    # Try MongoDB first
+    doc_meta = None
+    if mongodb_service.is_connected:
+        mongo_doc = await mongodb_service.get_document(document_id)
+        if mongo_doc:
+            try:
+                doc_meta = DocumentMetadata(**mongo_doc)
+            except Exception:
+                pass
+
+    # Fallback to vector store
+    if not doc_meta:
+        doc_meta = vector_store_service.get_document(document_id)
+
     if not doc_meta:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -221,9 +264,11 @@ async def get_document_detail(document_id: str):
     summary="Delete a document and its embeddings"
 )
 async def delete_document(document_id: str):
-    """Deletes a document, removing all associated embeddings from the vector store."""
-    success = vector_store_service.delete_document(document_id)
-    if not success:
+    """Deletes a document from the vector store and MongoDB."""
+    vs_deleted = vector_store_service.delete_document(document_id)
+    mongo_deleted = await mongodb_service.delete_document(document_id)
+
+    if not vs_deleted and not mongo_deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Document '{document_id}' not found."

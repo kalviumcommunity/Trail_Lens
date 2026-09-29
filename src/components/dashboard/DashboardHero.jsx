@@ -4,7 +4,7 @@ import { Search, ArrowRight, Sparkles, FileText, Shield, Pill } from 'lucide-rea
 import { useApp } from '../../context/AppContext';
 
 export default function DashboardHero() {
-  const { executeAskQuestion, currentQuery } = useApp();
+  const { executeAskQuestion, currentQuery, documents } = useApp();
   const [inputVal, setInputVal] = useState('');
   const navigate = useNavigate();
 
@@ -15,11 +15,12 @@ export default function DashboardHero() {
     navigate('/ask');
   };
 
+  const primaryDoc = documents[0]?.name || "Phase 3 clinical trial";
   const chips = [
-    "Common adverse events for Drug X",
-    "Efficacy results in Phase 3",
-    "Compare Drug X and B",
-    "Show safety updates"
+    "Progression-Free Survival results",
+    "Reported treatment-emergent adverse events",
+    "Contraindications and liver monitoring",
+    "Summary of study design and objectives"
   ];
 
   return (

@@ -13,7 +13,38 @@ import {
   ShieldCheck,
   ExternalLink
 } from 'lucide-react';
-import { FAQS } from '../data/mockData';
+const FAQS = [
+  {
+    category: "Getting Started",
+    question: "What is TrialLens and how does it verify clinical evidence?",
+    answer: "TrialLens is an evidence-first clinical research assistant built on advanced Retrieval-Augmented Generation (RAG). Every answer generated is strictly anchored to uploaded clinical study reports, drug labels, and safety bulletins. The system displays direct citations, page numbers, and exact text highlights, completely preventing AI hallucinations."
+  },
+  {
+    category: "Getting Started",
+    question: "What document formats are supported for upload?",
+    answer: "TrialLens supports PDF (.pdf) and Microsoft Word documents (.docx) up to 250MB per file. Documents are parsed with optical character recognition (OCR) and high-fidelity layout analysis to preserve tables, clinical figures, and appendix sections."
+  },
+  {
+    category: "AI & Citations",
+    question: "How does TrialLens calculate source attribution and confidence?",
+    answer: "Our pipeline uses dense semantic embeddings and hierarchical chunking. For every claim in the generated answer, TrialLens cross-references the token source against the document index. Citations are ranked by relevance, designating primary study source documents and supporting regulatory disclosures."
+  },
+  {
+    category: "AI & Citations",
+    question: "What happens if there is insufficient evidence in the document repository?",
+    answer: "Unlike general-purpose conversational LLMs, TrialLens will never invent clinical data. If the answer cannot be verified with high statistical confidence in your uploaded materials, the query is flagged with an 'Insufficient Evidence' badge and an alert explaining which specific data points are missing."
+  },
+  {
+    category: "Privacy & Compliance",
+    question: "Is TrialLens compliant with HIPAA, GxP, and 21 CFR Part 11?",
+    answer: "Yes. TrialLens is designed for enterprise biopharma compliance. All documents are encrypted at rest (AES-256) and in transit (TLS 1.3). No proprietary clinical trial data is used to train foundation models. Audit logs track every query, answer export, and document access."
+  },
+  {
+    category: "Export & Sharing",
+    question: "Can I export answers and citations into clinical study reports?",
+    answer: "Yes. You can copy formatted markdown summaries, export structured JSON or CSV data, or generate PDF citation summaries with one-click from the Answer card or the Saved Answers library."
+  }
+];
 import { useApp } from '../context/AppContext';
 
 export default function HelpPage() {

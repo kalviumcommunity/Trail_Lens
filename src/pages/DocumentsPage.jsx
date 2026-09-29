@@ -88,7 +88,7 @@ export default function DocumentsPage() {
     setFilters(initialFilters);
     addToast({
       title: "Filters Reset",
-      message: "Showing all 120 clinical documents.",
+      message: `Showing all ${documents.length} clinical documents.`,
       type: "info"
     });
   };

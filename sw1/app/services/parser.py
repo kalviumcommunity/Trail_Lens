@@ -163,6 +163,68 @@ class DocumentParser:
         )
 
     @staticmethod
+    def parse_docx(file_bytes: bytes, filename: str) -> ParsedDocument:
+        """Parses DOCX document into sections using paragraph headings."""
+        try:
+            import docx
+            doc = docx.Document(io.BytesIO(file_bytes))
+        except Exception as e:
+            # Fallback if docx fails or not installed
+            return DocumentParser.parse_text(file_bytes.decode("utf-8", errors="ignore"), filename)
+
+        sections: List[ParsedSection] = []
+        current_section = "Overview / General Information"
+        buffer: List[str] = []
+        full_text_parts: List[str] = []
+
+        page_estimate = 1
+        words_on_page = 0
+
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if not text:
+                continue
+            full_text_parts.append(text)
+            words_on_page += len(text.split())
+            if words_on_page > 450:
+                page_estimate += 1
+                words_on_page = 0
+
+            match = DocumentParser._match_section_header(text)
+            if match or para.style.name.startswith("Heading"):
+                if buffer:
+                    sections.append(ParsedSection(
+                        section_name=current_section,
+                        page_number=page_estimate,
+                        content="\n".join(buffer).strip()
+                    ))
+                    buffer = []
+                current_section = match or text
+            else:
+                buffer.append(text)
+
+        if buffer:
+            sections.append(ParsedSection(
+                section_name=current_section,
+                page_number=page_estimate,
+                content="\n".join(buffer).strip()
+            ))
+
+        if not sections:
+            sections.append(ParsedSection(
+                section_name="General",
+                page_number=1,
+                content="\n\n".join(full_text_parts).strip()
+            ))
+
+        return ParsedDocument(
+            title=filename,
+            total_pages=max(1, page_estimate),
+            sections=sections,
+            raw_text="\n\n".join(full_text_parts)
+        )
+
+    @staticmethod
     def _match_section_header(line: str) -> Optional[str]:
         if not line or len(line) > 100 or len(line) < 3:
             return None

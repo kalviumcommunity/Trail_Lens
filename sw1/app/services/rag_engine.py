@@ -1,3 +1,8 @@
+"""
+Clinical RAG Engine — powered by Google Gemini REST API.
+Uses pure HTTP (httpx) to ensure cross-platform compatibility and zero DLL dependencies.
+Falls back to a deterministic local clinical synthesizer when Gemini is unavailable.
+"""
 import json
 import re
 from typing import List, Optional, Tuple
@@ -12,7 +17,6 @@ from app.models.schemas import (
 )
 from app.services.vector_store import VectorStoreService, vector_store_service
 
-
 SYSTEM_CLINICAL_PROMPT = """You are TrialLens, an AI-powered clinical research assistant for pharmaceutical documents (clinical trial reports, drug labels, and safety bulletins).
 
 Instructions:
@@ -21,7 +25,14 @@ Instructions:
 3. If the retrieved evidence does not contain sufficient clinical information to answer the question, state:
    "Based on the provided documents, there is insufficient evidence to answer this question."
 4. Do NOT hallucinate, extrapolate, or bring in unverified external clinical assumptions.
+5. Be concise, precise, and use clinical terminology appropriate for pharmaceutical researchers.
 """
+
+GEMINI_CANDIDATE_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-flash-latest",
+]
 
 
 class RAGEngine:
@@ -29,6 +40,11 @@ class RAGEngine:
 
     def __init__(self, vector_store: Optional[VectorStoreService] = None):
         self.vector_store = vector_store or vector_store_service
+        self.api_key = settings.google_api_key.strip() if settings.google_api_key else ""
+        if self.api_key:
+            print(f"[OK] Google Gemini configured (API Key present, preferred model: {settings.gemini_model})")
+        else:
+            print("[WARN] GOOGLE_API_KEY not set - using local clinical synthesizer.")
 
     async def answer_question(self, req: QueryRequest) -> QueryResponse:
         # Step 1: Retrieve top evidence chunks
@@ -42,17 +58,19 @@ class RAGEngine:
         if not citations or citations[0].relevance_score < settings.similarity_threshold:
             return QueryResponse(
                 question=req.question,
-                answer="Based on the provided documents, there is insufficient evidence to answer this question. No relevant clinical reports, drug labels, or safety bulletins match your inquiry.",
+                answer="Based on the provided documents, there is insufficient evidence to answer this question. No relevant clinical reports, drug labels, or safety bulletins match your inquiry. Please upload relevant documents first.",
                 confidence_score=0.0,
                 citations=[],
                 evidence_chunks_consulted=0,
                 model_used="none"
             )
 
-        # Step 2: Try OpenAI if key is present
-        if settings.openai_api_key:
+        # Step 2: Try Google Gemini via direct REST API
+        if self.api_key:
             try:
-                answer = await self._generate_openai_answer(req.question, citations, req.temperature or 0.0)
+                answer, model_used = await self._generate_gemini_answer(
+                    req.question, citations, req.temperature or 0.0
+                )
                 confidence = self._compute_confidence(citations)
                 return QueryResponse(
                     question=req.question,
@@ -60,10 +78,10 @@ class RAGEngine:
                     confidence_score=confidence,
                     citations=citations,
                     evidence_chunks_consulted=len(citations),
-                    model_used=f"openai/{settings.openai_model}"
+                    model_used=f"google/{model_used}"
                 )
             except Exception as e:
-                print(f"OpenAI API call failed, falling back to local synthesizer: {e}")
+                print(f"Gemini API call failed, falling back to local synthesizer: {e}")
 
         # Step 3: Local clinical evidence synthesizer (deterministic & grounded)
         answer, confidence = self._synthesize_local_evidence(req.question, citations)
@@ -76,18 +94,21 @@ class RAGEngine:
             model_used="triallens-clinical-synthesizer-v1"
         )
 
-    async def _generate_openai_answer(
+    async def _generate_gemini_answer(
         self,
         question: str,
         citations: List[Citation],
         temperature: float
-    ) -> str:
+    ) -> Tuple[str, str]:
+        """Call Google Gemini REST API to synthesize a grounded clinical answer."""
         evidence_text = "\n\n".join([
             f"--- {c.citation_tag} ---\n{c.snippet}"
             for c in citations
         ])
-        
-        prompt = f"""EVIDENCE:
+
+        prompt = f"""{SYSTEM_CLINICAL_PROMPT}
+
+RETRIEVED CLINICAL EVIDENCE:
 {evidence_text}
 
 RESEARCH QUESTION:
@@ -95,26 +116,44 @@ RESEARCH QUESTION:
 
 Synthesize a precise, evidence-grounded answer citing exact sources using the reference tags above:"""
 
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {settings.openai_api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": settings.openai_model,
-            "messages": [
-                {"role": "system", "content": SYSTEM_CLINICAL_PROMPT},
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": temperature,
-            "max_tokens": 800
-        }
+        # Models to try in order
+        preferred = settings.gemini_model if settings.gemini_model in GEMINI_CANDIDATE_MODELS else "gemini-3.5-flash-lite"
+        models_to_try = [preferred] + [m for m in GEMINI_CANDIDATE_MODELS if m != preferred]
 
+        last_error = None
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"].strip()
+            for model_name in models_to_try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.api_key}"
+                payload = {
+                    "contents": [{
+                        "parts": [{"text": prompt}]
+                    }],
+                    "generationConfig": {
+                        "temperature": temperature,
+                        "maxOutputTokens": 1024,
+                    }
+                }
+                try:
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        candidates = data.get("candidates", [])
+                        if candidates and "content" in candidates[0]:
+                            parts = candidates[0]["content"].get("parts", [])
+                            if parts and "text" in parts[0]:
+                                return parts[0]["text"].strip(), model_name
+                    elif resp.status_code == 503:
+                        # High demand spike, try next model
+                        print(f"Gemini model {model_name} 503 (high demand), trying next candidate...")
+                        continue
+                    else:
+                        print(f"Gemini {model_name} returned HTTP {resp.status_code}: {resp.text[:120]}")
+                        last_error = resp.text
+                except Exception as ex:
+                    print(f"Error querying Gemini {model_name}: {ex}")
+                    last_error = str(ex)
+
+        raise RuntimeError(f"All Gemini model candidates failed. Last error: {last_error}")
 
     def _synthesize_local_evidence(
         self,
@@ -143,16 +182,15 @@ Synthesize a precise, evidence-grounded answer citing exact sources using the re
         for c in citations:
             sentences = re.split(r"(?<=[.!?])\s+", c.snippet)
             matched_sentences = []
-            
+
             for s in sentences:
                 s_lower = s.lower()
                 overlap = sum(1 for kw in eval_keywords if kw in s_lower)
                 if overlap > 0:
                     matched_sentences.append((overlap, s.strip()))
-            
-            # Sort sentences by keyword relevance
+
             matched_sentences.sort(key=lambda x: x[0], reverse=True)
-            
+
             if matched_sentences and matched_sentences[0][0] >= 1:
                 top_sent = matched_sentences[0][1]
                 supporting_points.append(f"{top_sent} {c.citation_tag}")
@@ -164,17 +202,16 @@ Synthesize a precise, evidence-grounded answer citing exact sources using the re
                 0.0
             )
 
-        # Construct synthesized response
         answer_lines = [
             f"Based on the retrieved clinical evidence from {len(citations)} source document(s):",
             ""
         ]
-        for idx, pt in enumerate(supporting_points[:4], 1):
+        for pt in supporting_points[:4]:
             answer_lines.append(f"• {pt}")
 
         answer_lines.append("")
         answer_lines.append(f"Summary: Evidence derived directly from study records across {len(cited_refs)} verified citation(s).")
-        
+
         answer = "\n".join(answer_lines)
         confidence = self._compute_confidence(citations)
         return answer, confidence
@@ -184,7 +221,6 @@ Synthesize a precise, evidence-grounded answer citing exact sources using the re
             return 0.0
         top_score = citations[0].relevance_score
         avg_score = sum(c.relevance_score for c in citations) / len(citations)
-        # Scaled confidence between 0.4 and 0.98 based on relevance
         confidence = min(0.98, max(0.40, (top_score * 0.7 + avg_score * 0.3) * 1.5))
         return round(float(confidence), 2)
 
