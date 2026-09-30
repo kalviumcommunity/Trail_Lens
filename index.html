@@ -8,8 +8,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+      (function() {
+        try {
+          var raw = localStorage.getItem('triallens_settings');
+          var settings = raw ? JSON.parse(raw) : null;
+          var theme = (settings && settings.theme) ? settings.theme : 'dark';
+          var accent = (settings && settings.accentColor) ? settings.accentColor : 'blue';
+          
+          var effectiveTheme = theme;
+          if (theme === 'system') {
+            effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          
+          var root = document.documentElement;
+          root.classList.remove('dark', 'light');
+          root.classList.add(effectiveTheme);
+          root.setAttribute('data-theme', effectiveTheme);
+          root.setAttribute('data-accent', accent);
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.setAttribute('data-accent', 'blue');
+        }
+      })();
+    </script>
   </head>
-  <body class="bg-[#080d1a] text-slate-100 antialiased selection:bg-blue-600 selection:text-white min-h-screen overflow-x-hidden">
+  <body class="bg-[#080d1a] text-slate-100 antialiased selection:bg-blue-600 selection:text-white min-h-screen overflow-x-hidden transition-colors duration-150">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

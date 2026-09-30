@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   User,
@@ -26,6 +26,7 @@ export default function SettingsPage() {
     setUserProfile,
     settings,
     setSettings,
+    updateSettings,
     setSavedAnswers,
     savedAnswers,
     addToast
@@ -36,6 +37,29 @@ export default function SettingsPage() {
   // Form states
   const [profileForm, setProfileForm] = useState({ ...userProfile });
   const [settingsState, setSettingsState] = useState({ ...settings });
+
+  // Sync settingsState when settings change externally
+  useEffect(() => {
+    setSettingsState(settings);
+  }, [settings]);
+
+  const handleThemeChange = (newTheme) => {
+    setSettingsState(prev => ({ ...prev, theme: newTheme }));
+    if (updateSettings) {
+      updateSettings({ theme: newTheme });
+    } else {
+      setSettings(prev => ({ ...prev, theme: newTheme }));
+    }
+  };
+
+  const handleAccentChange = (newAccent) => {
+    setSettingsState(prev => ({ ...prev, accentColor: newAccent }));
+    if (updateSettings) {
+      updateSettings({ accentColor: newAccent });
+    } else {
+      setSettings(prev => ({ ...prev, accentColor: newAccent }));
+    }
+  };
 
   // Confirmation modals
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
@@ -279,11 +303,11 @@ export default function SettingsPage() {
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setSettingsState(prev => ({ ...prev, theme: t }))}
+                    onClick={() => handleThemeChange(t)}
                     className={`py-3 px-4 rounded-xl text-xs font-semibold capitalize border transition-all ${
                       settingsState.theme === t
-                        ? 'bg-blue-600/20 text-white border-blue-500 ring-2 ring-blue-500/20'
-                        : 'bg-[#080d19] text-slate-400 border-slate-800 hover:border-slate-700'
+                        ? 'bg-blue-600/20 text-blue-400 font-bold border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
+                        : 'bg-[#080d19] text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
                     }`}
                   >
                     {t}
@@ -296,20 +320,24 @@ export default function SettingsPage() {
               <h4 className="font-bold text-white text-sm">Accent Color Palette</h4>
               <div className="flex items-center gap-3">
                 {[
-                  { name: 'blue', bg: 'bg-blue-600', ring: 'ring-blue-500' },
-                  { name: 'cyan', bg: 'bg-cyan-500', ring: 'ring-cyan-400' },
-                  { name: 'purple', bg: 'bg-purple-600', ring: 'ring-purple-400' },
-                  { name: 'emerald', bg: 'bg-emerald-500', ring: 'ring-emerald-400' }
+                  { name: 'blue', bg: 'bg-[#2563eb]', ring: 'ring-[#3b82f6]' },
+                  { name: 'cyan', bg: 'bg-[#0891b2]', ring: 'ring-[#06b6d4]' },
+                  { name: 'purple', bg: 'bg-[#7c3aed]', ring: 'ring-[#a855f7]' },
+                  { name: 'emerald', bg: 'bg-[#059669]', ring: 'ring-[#10b981]' }
                 ].map((c) => (
                   <button
                     key={c.name}
                     type="button"
-                    onClick={() => setSettingsState(prev => ({ ...prev, accentColor: c.name }))}
+                    onClick={() => handleAccentChange(c.name)}
                     className={`w-9 h-9 rounded-xl ${c.bg} flex items-center justify-center transition-all ${
-                      settingsState.accentColor === c.name ? `ring-4 ${c.ring} scale-110 shadow-lg` : 'opacity-60 hover:opacity-100'
+                      settingsState.accentColor === c.name
+                        ? `ring-4 ${c.ring} ring-offset-2 ring-offset-[#0c1427] scale-110 shadow-lg z-10`
+                        : 'opacity-70 hover:opacity-100 hover:scale-105'
                     }`}
+                    title={`Select ${c.name} accent`}
+                    aria-label={`Select ${c.name} accent`}
                   >
-                    {settingsState.accentColor === c.name && <Check className="w-4 h-4 text-white" />}
+                    {settingsState.accentColor === c.name && <Check className="w-4 h-4 text-white stroke-[3]" />}
                   </button>
                 ))}
               </div>

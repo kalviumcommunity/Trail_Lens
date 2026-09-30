@@ -227,14 +227,48 @@ export function AppProvider({ children }) {
     localStorage.setItem('triallens_user_profile', JSON.stringify(userProfile));
   }, [userProfile]);
 
+  // Apply and synchronize theme and accent color changes
   useEffect(() => {
     localStorage.setItem('triallens_settings', JSON.stringify(settings));
+
+    // 1. Apply Accent Color
+    const accent = settings.accentColor || 'blue';
+    document.documentElement.setAttribute('data-accent', accent);
+
+    // 2. Apply Theme Mode (Dark, Light, System)
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const applyTheme = (isDark) => {
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    };
+
     if (settings.theme === 'dark') {
-      document.documentElement.classList.add('dark');
+      applyTheme(true);
     } else if (settings.theme === 'light') {
-      document.documentElement.classList.remove('dark');
+      applyTheme(false);
+    } else if (settings.theme === 'system') {
+      applyTheme(mediaQuery.matches);
+
+      const handleMediaChange = (e) => {
+        applyTheme(e.matches);
+      };
+
+      mediaQuery.addEventListener('change', handleMediaChange);
+      return () => mediaQuery.removeEventListener('change', handleMediaChange);
     }
   }, [settings]);
+
+  const updateSettings = (partialSettings) => {
+    setSettings((prev) => ({ ...prev, ...partialSettings }));
+  };
 
   // Keyboard shortcut listener for Ctrl+K
   useEffect(() => {
@@ -560,6 +594,7 @@ export function AppProvider({ children }) {
         setUserProfile,
         settings,
         setSettings,
+        updateSettings,
         sidebarCollapsed,
         setSidebarCollapsed,
         mobileNavOpen,
