@@ -84,6 +84,8 @@ export function AppProvider({ children }) {
       accentColor: "blue",
       enableAnimations: true,
       reduceMotion: false,
+      textSize: "default",
+      fontFamily: "inter",
       responseStyle: "balanced",
       citationDisplay: "sidebar",
       autoSaveAnswers: true,
@@ -235,7 +237,13 @@ export function AppProvider({ children }) {
     const accent = settings.accentColor || 'blue';
     document.documentElement.setAttribute('data-accent', accent);
 
-    // 2. Apply Theme Mode (Dark, Light, System)
+    // 2. Apply Text Size
+    document.documentElement.setAttribute('data-text-size', settings.textSize || 'default');
+
+    // 3. Apply Font Family
+    document.documentElement.setAttribute('data-font', settings.fontFamily || 'inter');
+
+    // 4. Apply Theme Mode (Dark, Light, System)
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const applyTheme = (isDark) => {

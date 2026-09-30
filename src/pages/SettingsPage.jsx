@@ -61,6 +61,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleTextSizeChange = (newSize) => {
+    setSettingsState(prev => ({ ...prev, textSize: newSize }));
+    if (updateSettings) {
+      updateSettings({ textSize: newSize });
+    } else {
+      setSettings(prev => ({ ...prev, textSize: newSize }));
+    }
+  };
+
+  const handleFontChange = (newFont) => {
+    setSettingsState(prev => ({ ...prev, fontFamily: newFont }));
+    if (updateSettings) {
+      updateSettings({ fontFamily: newFont });
+    } else {
+      setSettings(prev => ({ ...prev, fontFamily: newFont }));
+    }
+  };
+
   // Confirmation modals
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -338,6 +356,66 @@ export default function SettingsPage() {
                     aria-label={`Select ${c.name} accent`}
                   >
                     {settingsState.accentColor === c.name && <Check className="w-4 h-4 text-white stroke-[3]" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Text Size */}
+            <div className="space-y-3 pt-4 border-t border-slate-800">
+              <div>
+                <h4 className="font-bold text-white text-sm">Text Size</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Scales the entire UI — typography, spacing, and layout adapt proportionally.</p>
+              </div>
+              <div className="grid grid-cols-4 gap-2 max-w-md">
+                {[
+                  { value: 'small', label: 'Small' },
+                  { value: 'default', label: 'Default' },
+                  { value: 'large', label: 'Large' },
+                  { value: 'xl', label: 'Extra Large' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleTextSizeChange(opt.value)}
+                    className={`py-2.5 px-2 rounded-xl text-xs font-semibold border transition-all text-center ${
+                      (settingsState.textSize || 'default') === opt.value
+                        ? 'bg-blue-600/20 text-blue-400 font-bold border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
+                        : 'bg-[#080d19] text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Font Family */}
+            <div className="space-y-3 pt-4 border-t border-slate-800">
+              <div>
+                <h4 className="font-bold text-white text-sm">Font Family</h4>
+                <p className="text-[11px] text-slate-400 mt-0.5">Change the typeface used across the entire interface.</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3 max-w-md">
+                {[
+                  { value: 'inter', label: 'Inter', sub: 'Default' },
+                  { value: 'poppins', label: 'Poppins', sub: 'Geometric' },
+                  { value: 'roboto', label: 'Roboto', sub: 'Material' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleFontChange(opt.value)}
+                    className={`py-3 px-3 rounded-xl border transition-all text-left ${
+                      (settingsState.fontFamily || 'inter') === opt.value
+                        ? 'bg-blue-600/20 border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
+                        : 'bg-[#080d19] border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    <p className={`text-xs font-bold leading-none ${(settingsState.fontFamily || 'inter') === opt.value ? 'text-blue-400' : 'text-white'}`} style={{ fontFamily: opt.value === 'inter' ? 'Inter' : opt.value === 'poppins' ? 'Poppins' : 'Roboto' }}>
+                      {opt.label}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1">{opt.sub}</p>
                   </button>
                 ))}
               </div>

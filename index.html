@@ -7,7 +7,7 @@
     <title>TRIALLENS | AI-Powered Clinical Research Intelligence</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script>
       (function() {
         try {
@@ -15,6 +15,8 @@
           var settings = raw ? JSON.parse(raw) : null;
           var theme = (settings && settings.theme) ? settings.theme : 'dark';
           var accent = (settings && settings.accentColor) ? settings.accentColor : 'blue';
+          var textSize = (settings && settings.textSize) ? settings.textSize : 'default';
+          var fontFamily = (settings && settings.fontFamily) ? settings.fontFamily : 'inter';
           
           var effectiveTheme = theme;
           if (theme === 'system') {
@@ -26,9 +28,13 @@
           root.classList.add(effectiveTheme);
           root.setAttribute('data-theme', effectiveTheme);
           root.setAttribute('data-accent', accent);
+          root.setAttribute('data-text-size', textSize);
+          root.setAttribute('data-font', fontFamily);
         } catch (e) {
           document.documentElement.classList.add('dark');
           document.documentElement.setAttribute('data-accent', 'blue');
+          document.documentElement.setAttribute('data-text-size', 'default');
+          document.documentElement.setAttribute('data-font', 'inter');
         }
       })();
     </script>
