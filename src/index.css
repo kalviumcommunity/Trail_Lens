@@ -2,102 +2,736 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root,
-  [data-accent="blue"] {
-    --color-accent-50: 239 246 255;
-    --color-accent-100: 219 234 254;
-    --color-accent-200: 191 219 254;
-    --color-accent-300: 147 197 253;
-    --color-accent-400: 96 165 250;
-    --color-accent-500: 59 130 246;
-    --color-accent-600: 37 99 235;
-    --color-accent-700: 29 78 216;
-    --color-accent-800: 30 64 175;
-    --color-accent-900: 30 58 138;
-    --color-accent-950: 23 37 84;
-    --bg-base: #080d1a;
-    --card-base: #0d1527;
-    --border-base: #1e293b;
-  }
+/* ==========================================================================
+   TRIALLENS — Design Token System
+   One set of semantic CSS custom properties controls the entire UI.
+   :root = dark mode defaults   |   html.light = light mode overrides
+   ========================================================================== */
 
-  [data-accent="cyan"] {
-    --color-accent-50: 236 254 255;
-    --color-accent-100: 207 250 254;
-    --color-accent-200: 165 243 252;
-    --color-accent-300: 103 232 249;
-    --color-accent-400: 34 211 238;
-    --color-accent-500: 6 182 212;
-    --color-accent-600: 8 145 178;
-    --color-accent-700: 14 116 144;
-    --color-accent-800: 21 94 117;
-    --color-accent-900: 22 78 99;
-    --color-accent-950: 8 51 68;
-  }
-
-  [data-accent="purple"] {
-    --color-accent-50: 250 245 255;
-    --color-accent-100: 243 232 255;
-    --color-accent-200: 233 213 255;
-    --color-accent-300: 216 180 254;
-    --color-accent-400: 192 132 252;
-    --color-accent-500: 168 85 247;
-    --color-accent-600: 147 51 234;
-    --color-accent-700: 126 34 206;
-    --color-accent-800: 107 33 168;
-    --color-accent-900: 88 28 135;
-    --color-accent-950: 59 7 100;
-  }
-
-  [data-accent="emerald"] {
-    --color-accent-50: 236 253 245;
-    --color-accent-100: 209 250 229;
-    --color-accent-200: 167 243 208;
-    --color-accent-300: 110 231 183;
-    --color-accent-400: 52 211 153;
-    --color-accent-500: 16 185 129;
-    --color-accent-600: 5 150 105;
-    --color-accent-700: 4 120 87;
-    --color-accent-800: 6 95 70;
-    --color-accent-900: 6 78 59;
-    --color-accent-950: 2 44 34;
-  }
-
-  html {
-    transition: background-color 0.2s ease, color 0.2s ease;
-  }
-
-  body {
-    background-color: #080d1a;
-    color: #f1f5f9;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    overflow-x: hidden;
-    transition: background-color 0.2s ease, color 0.2s ease;
-  }
-
-  /* Custom scrollbar for clinical UI */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #080d1a;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: #1e293b;
-    border-radius: 9999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: #334155;
-  }
+/* ── Accent Palette – Blue (default) ── */
+:root,
+[data-accent="blue"] {
+  --color-accent-50:  239 246 255;
+  --color-accent-100: 219 234 254;
+  --color-accent-200: 191 219 254;
+  --color-accent-300: 147 197 253;
+  --color-accent-400:  96 165 250;
+  --color-accent-500:  59 130 246;
+  --color-accent-600:  37  99 235;
+  --color-accent-700:  29  78 216;
+  --color-accent-800:  30  64 175;
+  --color-accent-900:  30  58 138;
+  --color-accent-950:  23  37  84;
+}
+[data-accent="cyan"] {
+  --color-accent-50:  236 254 255;
+  --color-accent-100: 207 250 254;
+  --color-accent-200: 165 243 252;
+  --color-accent-300: 103 232 249;
+  --color-accent-400:  34 211 238;
+  --color-accent-500:   6 182 212;
+  --color-accent-600:   8 145 178;
+  --color-accent-700:  14 116 144;
+  --color-accent-800:  21  94 117;
+  --color-accent-900:  22  78  99;
+  --color-accent-950:   8  51  68;
+}
+[data-accent="purple"] {
+  --color-accent-50:  250 245 255;
+  --color-accent-100: 243 232 255;
+  --color-accent-200: 233 213 255;
+  --color-accent-300: 216 180 254;
+  --color-accent-400: 192 132 252;
+  --color-accent-500: 168  85 247;
+  --color-accent-600: 147  51 234;
+  --color-accent-700: 126  34 206;
+  --color-accent-800: 107  33 168;
+  --color-accent-900:  88  28 135;
+  --color-accent-950:  59   7 100;
+}
+[data-accent="emerald"] {
+  --color-accent-50:  236 253 245;
+  --color-accent-100: 209 250 229;
+  --color-accent-200: 167 243 208;
+  --color-accent-300: 110 231 183;
+  --color-accent-400:  52 211 153;
+  --color-accent-500:  16 185 129;
+  --color-accent-600:   5 150 105;
+  --color-accent-700:   4 120  87;
+  --color-accent-800:   6  95  70;
+  --color-accent-900:   6  78  59;
+  --color-accent-950:   2  44  34;
 }
 
-/* Glassmorphism styling */
+/* ==========================================================================
+   DARK MODE — Surface / Text / Border tokens  (the default)
+   ========================================================================== */
+:root {
+  /* Surfaces */
+  --bg-page:        #080d1a;
+  --bg-sidebar:     #090e1b;
+  --bg-header:      rgba(9, 14, 27, 0.92);
+  --bg-card:        #0c1427;
+  --bg-card-alt:    #0d1527;
+  --bg-input:       #080d19;
+  --bg-well:        #0b1224;
+  --bg-chip:        rgba(15, 29, 56, 0.80);
+  --bg-dropdown:    #0e172a;
+  --bg-hover:       rgba(30, 41, 59, 0.50);
+  --bg-row-hover:   rgba(30, 41, 59, 0.35);
+
+  /* Text */
+  --tx-primary:     #f1f5f9;
+  --tx-secondary:   #cbd5e1;
+  --tx-muted:       #94a3b8;
+  --tx-faint:       #64748b;
+
+  /* Borders */
+  --bd-ui:          rgba(30, 41, 59, 0.80);
+  --bd-card:        rgba(30, 41, 59, 0.60);
+  --bd-strong:      #1e293b;
+
+  /* Scrollbar */
+  --sb-track:       #080d1a;
+  --sb-thumb:       #1e293b;
+  --sb-hover:       #334155;
+
+  /* Shadows */
+  --shadow-card:    0 4px 24px 0 rgba(0,0,0,0.45);
+  --shadow-dropdown:0 8px 32px 0 rgba(0,0,0,0.55);
+}
+
+/* ==========================================================================
+   LIGHT MODE — All tokens flip at once.
+   Design philosophy: clean white surfaces, slate-800/700 text for contrast,
+   subtle shadows replace glows, accent colour preserved at full saturation.
+   ========================================================================== */
+html.light {
+  /* Surfaces — 3-tier hierarchy (page < card < elevated) */
+  --bg-page:        #f0f4f8;
+  --bg-sidebar:     #ffffff;
+  --bg-header:      rgba(255, 255, 255, 0.95);
+  --bg-card:        #ffffff;
+  --bg-card-alt:    #f8fafc;
+  --bg-input:       #f8fafc;
+  --bg-well:        #eef2f7;
+  --bg-chip:        #e8edf4;
+  --bg-dropdown:    #ffffff;
+  --bg-hover:       #f1f5f9;
+  --bg-row-hover:   #f8fafc;
+
+  /* Text — strong hierarchy */
+  --tx-primary:     #0f172a;
+  --tx-secondary:   #334155;
+  --tx-muted:       #64748b;
+  --tx-faint:       #94a3b8;
+
+  /* Borders — visible but not heavy */
+  --bd-ui:          #dde3ec;
+  --bd-card:        #e2e8f0;
+  --bd-strong:      #cbd5e1;
+
+  /* Scrollbar */
+  --sb-track:       #f0f4f8;
+  --sb-thumb:       #cbd5e1;
+  --sb-hover:       #94a3b8;
+
+  /* Shadows — key differentiator in light mode */
+  --shadow-card:    0 1px 3px 0 rgba(0,0,0,0.07), 0 4px 16px 0 rgba(0,0,0,0.06);
+  --shadow-dropdown:0 4px 24px 0 rgba(0,0,0,0.12), 0 1px 4px 0 rgba(0,0,0,0.06);
+}
+
+/* ==========================================================================
+   BASE — Applied to page root, inherits tokens
+   ========================================================================== */
+
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--tx-primary);
+  font-family: var(--font-sans, 'Inter', system-ui, sans-serif);
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.2s ease;
+}
+
+#root,
+.min-h-screen {
+  background-color: var(--bg-page);
+  color: var(--tx-primary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--sb-track); }
+::-webkit-scrollbar-thumb  { background: var(--sb-thumb); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sb-hover); }
+
+/* ==========================================================================
+   LAYOUT STRUCTURE — Sidebar, Header, Main
+   ========================================================================== */
+
+aside {
+  background-color: var(--bg-sidebar) !important;
+  border-right: 1px solid var(--bd-ui) !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+header {
+  background-color: var(--bg-header) !important;
+  border-bottom: 1px solid var(--bd-ui) !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+/* ==========================================================================
+   DARK MODE TEXT — baseline (no changes, Tailwind handles this)
+   ========================================================================== */
+
+/* ==========================================================================
+   LIGHT MODE — Text colours
+   !important is required: Tailwind utilities are in @layer utilities which
+   normally beats unlayered CSS, but !important reliably wins regardless.
+   ========================================================================== */
+
+/* Primary text — headings, labels, strong content */
+html.light .text-white       { color: #0f172a !important; }
+html.light .text-slate-100   { color: #1e293b !important; }
+html.light .text-slate-200   { color: #334155 !important; }
+html.light .text-slate-300   { color: #475569 !important; }
+html.light .text-slate-400   { color: #64748b !important; }
+html.light .text-slate-500   { color: #94a3b8 !important; }
+html.light .text-slate-600   { color: #94a3b8 !important; }
+
+/* All heading elements */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light h5,
+html.light h6 {
+  color: #0f172a !important;
+}
+
+/* General paragraph / span text on light bg */
+html.light p,
+html.light span,
+html.light label,
+html.light li {
+  color: inherit;
+}
+
+/* ── Preserve semantic accent / status colours ── */
+html.light .text-blue-400   { color: rgb(var(--color-accent-600))  !important; }
+html.light .text-blue-300   { color: rgb(var(--color-accent-500))  !important; }
+html.light .text-blue-500   { color: rgb(var(--color-accent-600))  !important; }
+html.light .text-blue-600   { color: rgb(var(--color-accent-700))  !important; }
+html.light .text-cyan-400   { color: #0891b2 !important; }
+html.light .text-emerald-400 { color: #059669 !important; }
+html.light .text-emerald-500 { color: #047857 !important; }
+html.light .text-purple-400  { color: #7c3aed !important; }
+html.light .text-amber-400   { color: #d97706 !important; }
+html.light .text-amber-500   { color: #b45309 !important; }
+html.light .text-rose-400    { color: #e11d48 !important; }
+html.light .text-rose-500    { color: #be123c !important; }
+html.light .text-green-400   { color: #16a34a !important; }
+html.light .text-yellow-400  { color: #ca8a04 !important; }
+
+/* ── Active nav items / filled buttons keep WHITE text ── */
+html.light nav a[class*="bg-blue"] *,
+html.light nav a[class*="bg-blue"],
+html.light button[class*="bg-blue-6"],
+html.light a[class*="bg-blue-6"],
+html.light [class*="bg-blue-6"] > .text-white,
+html.light [class*="bg-blue-6"] > span,
+html.light [class*="bg-blue-6"] > svg {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Backgrounds & Surfaces
+   ========================================================================== */
+
+/* Page / layout root containers */
+html.light body,
+html.light #root,
+html.light .min-h-screen {
+  background-color: var(--bg-page) !important;
+}
+
+/* Card surfaces — all common hex values used in JSX */
+html.light .bg-\[\#0c1427\],
+html.light .bg-\[\#0d1527\],
+html.light .bg-\[\#0e172a\],
+html.light .bg-\[\#0f172a\],
+html.light .bg-\[\#0b1222\],
+html.light .bg-\[\#0b1122\],
+html.light .bg-\[\#0b1224\],
+html.light .bg-\[\#090e1b\],
+html.light .bg-\[\#090f1f\],
+html.light .bg-\[\#0a0f1d\],
+html.light .bg-navy-950,
+html.light .bg-navy-900,
+html.light .bg-navy-850,
+html.light .bg-navy-800 {
+  background-color: var(--bg-card) !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Well / inner surfaces (inputs, table headers, inner containers) */
+html.light .bg-\[\#080d1a\],
+html.light .bg-\[\#080d19\],
+html.light .bg-\[\#060a14\],
+html.light .bg-\[\#070b16\],
+html.light .bg-\[\#081022\],
+html.light .bg-\[\#0a1020\] {
+  background-color: var(--bg-well) !important;
+  border-color: var(--bd-card) !important;
+}
+
+/* Dashboard hero gradient banner */
+html.light .bg-gradient-to-r.from-\[\#0c1b3b\],
+html.light [class*="from-[#0c1b3b]"] {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f7ff 60%, #f8fafc 100%) !important;
+  border: 1px solid rgba(var(--color-accent-300) / 0.40) !important;
+  box-shadow: 0 4px 24px rgba(var(--color-accent-500) / 0.08) !important;
+}
+
+/* Sidebar quote card */
+html.light [class*="from-[#0c1833]"] {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f5ff 100%) !important;
+  border-color: rgba(var(--color-accent-300) / 0.30) !important;
+}
+html.light [class*="from-[#0c1833]"] * {
+  color: #334155 !important;
+}
+
+/* Chips / suggestion pills */
+html.light .bg-\[\#0f1d38\]\/80,
+html.light [class*="bg-[#0f1d38]"] {
+  background-color: var(--bg-chip) !important;
+  border-color: var(--bd-card) !important;
+  color: #334155 !important;
+}
+html.light [class*="bg-[#0f1d38]"]:hover {
+  background-color: #dde5f4 !important;
+  color: #0f172a !important;
+}
+
+/* Input wrapper bg inside hero */
+html.light [class*="bg-[#081022]"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-strong) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06) inset !important;
+}
+
+/* Version badge in sidebar */
+html.light [class*="bg-slate-800\/80"],
+html.light [class*="bg-slate-800/80"] {
+  background-color: #e8edf4 !important;
+  border-color: #dde3ec !important;
+  color: #64748b !important;
+}
+
+/* Dropdown popovers */
+html.light [class*="bg-[#0e172a]"],
+html.light [class*="bg-[#0c1427]"],
+html.light [class*="bg-[#0f172a]"],
+html.light [class*="bg-[#0a0f1d]"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-dropdown) !important;
+}
+
+/* Blue tinted notification row */
+html.light [class*="bg-blue-950\/20"] {
+  background-color: rgba(var(--color-accent-50) / 1) !important;
+}
+
+/* Answer warning callout */
+html.light [class*="bg-blue-950\/40"] {
+  background-color: rgb(var(--color-accent-50)) !important;
+  border-color: rgb(var(--color-accent-200)) !important;
+  color: rgb(var(--color-accent-800)) !important;
+}
+
+/* Hover bg on rows / buttons */
+html.light [class*="hover:bg-slate-800"]:hover,
+html.light [class*="hover:bg-slate-700"]:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Modal backdrop */
+html.light .bg-navy-950\/80,
+html.light [class*="bg-navy-950\/80"],
+html.light [class*="bg-navy-950\/85"] {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Borders
+   ========================================================================== */
+
+html.light .border-slate-900,
+html.light .border-slate-800,
+html.light [class*="border-slate-8"],
+html.light .border-slate-700,
+html.light [class*="border-slate-7"],
+html.light [class*="border-[#1a"],
+html.light .border-blue-900\/50,
+html.light [class*="border-blue-900"] {
+  border-color: var(--bd-card) !important;
+}
+
+html.light .divide-slate-800\/40 > * + *,
+html.light .divide-slate-800\/60 > * + *,
+html.light .divide-y > * + * {
+  border-top-color: var(--bd-card) !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Sidebar Navigation
+   ========================================================================== */
+
+/* Sidebar base */
+html.light aside {
+  background-color: #ffffff !important;
+  border-right-color: var(--bd-ui) !important;
+}
+
+/* Inactive nav links */
+html.light aside nav a:not([class*="bg-blue"]) {
+  color: #475569 !important;
+}
+html.light aside nav a:not([class*="bg-blue"]):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+html.light aside nav a:not([class*="bg-blue"]) svg {
+  color: #94a3b8 !important;
+}
+html.light aside nav a:not([class*="bg-blue"]):hover svg {
+  color: rgb(var(--color-accent-600)) !important;
+}
+
+/* Active nav link — white text on accent bg */
+html.light aside nav a[class*="bg-blue"] {
+  color: #ffffff !important;
+}
+html.light aside nav a[class*="bg-blue"] span,
+html.light aside nav a[class*="bg-blue"] svg {
+  color: #ffffff !important;
+}
+
+/* Sidebar collapse toggle */
+html.light aside button {
+  color: #94a3b8 !important;
+}
+html.light aside button:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Sidebar tagline */
+html.light aside .text-slate-400 { color: #94a3b8 !important; }
+html.light aside .text-slate-300 { color: #64748b !important; }
+
+/* Sidebar tooltip */
+html.light aside [class*="bg-slate-900"] {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Topbar / Header
+   ========================================================================== */
+
+html.light header {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-bottom-color: var(--bd-ui) !important;
+}
+
+/* Mobile menu toggle */
+html.light header button:not([class*="bg-blue"]) {
+  color: #64748b !important;
+}
+html.light header button:not([class*="bg-blue"]):hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+/* Search input wrapper */
+html.light header form input {
+  background-color: #f0f4f8 !important;
+  border-color: #dde3ec !important;
+  color: #0f172a !important;
+}
+html.light header form input::placeholder {
+  color: #94a3b8 !important;
+}
+html.light header form input:focus {
+  background-color: #ffffff !important;
+  border-color: rgb(var(--color-accent-500)) !important;
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-500) / 0.15) !important;
+}
+
+/* Topbar profile name */
+html.light header .text-white { color: #0f172a !important; }
+html.light header .text-slate-400 { color: #64748b !important; }
+
+/* Bell / notification dot ring */
+html.light header span[class*="ring-[#090e1b]"] {
+  --tw-ring-color: #ffffff !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Forms & Inputs (global)
+   ========================================================================== */
+
+html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.light select,
+html.light textarea {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+html.light input:focus,
+html.light select:focus,
+html.light textarea:focus {
+  background-color: #ffffff !important;
+  border-color: rgb(var(--color-accent-500)) !important;
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-500) / 0.15) !important;
+  color: #0f172a !important;
+}
+
+/* Transparent bg inputs (inside hero card) */
+html.light input.bg-transparent {
+  background-color: transparent !important;
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Tables
+   ========================================================================== */
+
+html.light thead tr {
+  background-color: #f8fafc !important;
+}
+html.light th {
+  color: #64748b !important;
+  border-bottom-color: var(--bd-card) !important;
+}
+html.light td {
+  color: #334155 !important;
+  border-bottom-color: var(--bd-card) !important;
+}
+html.light tr:hover {
+  background-color: #f8fafc !important;
+}
+html.light tbody tr:hover td {
+  color: #0f172a !important;
+}
+/* File name click hover */
+html.light tbody td span[class*="group-hover:text-blue"] {
+  color: #0f172a !important;
+}
+html.light tbody tr:hover td span[class*="group-hover:text-blue"] {
+  color: rgb(var(--color-accent-600)) !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Settings Page
+   ========================================================================== */
+
+/* Tab navigation bar */
+html.light .bg-\[\#0c1427\].rounded-2xl {
+  background-color: #f0f4f8 !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: none !important;
+}
+
+/* Inactive tab buttons */
+html.light .bg-\[\#0c1427\].rounded-2xl button:not([class*="bg-blue"]) {
+  color: #64748b !important;
+}
+html.light .bg-\[\#0c1427\].rounded-2xl button:not([class*="bg-blue"]):hover {
+  background-color: #e8edf4 !important;
+  color: #0f172a !important;
+}
+
+/* Tab panel card */
+html.light .rounded-2xl.bg-\[\#0c1427\].border {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Theme mode buttons (inactive) */
+html.light .bg-\[\#080d19\] {
+  background-color: #f0f4f8 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+html.light .bg-\[\#080d19\]:hover {
+  background-color: #e8edf4 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+/* Profile initials badge */
+html.light .bg-blue-600.text-white,
+html.light [class*="bg-blue-6"][class*="text-white"] {
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Dashboard
+   ========================================================================== */
+
+/* Stat cards */
+html.light .grid [class*="bg-[#0c1427]"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Stat number */
+html.light [class*="text-white"][class*="font-extrabold"][class*="font-mono"] {
+  color: #0f172a !important;
+}
+
+/* Icon bg wells inside stat cards */
+html.light [class*="bg-blue-600\/20"]  { background-color: rgba(var(--color-accent-100) / 1) !important; }
+html.light [class*="bg-purple-600\/20"]{ background-color: #f3e8ff !important; }
+html.light [class*="bg-emerald-600\/20"]{ background-color: #d1fae5 !important; }
+html.light [class*="bg-amber-600\/20"] { background-color: #fef3c7 !important; }
+
+/* Hero banner text over light gradient */
+html.light [class*="from-[#0c1b3b]"] h1,
+html.light [class*="from-[#0c1b3b]"] h2,
+html.light [class*="from-[#0c1b3b]"] p,
+html.light [class*="from-[#0c1b3b]"] span {
+  color: #0f172a !important;
+}
+html.light [class*="from-[#0c1b3b]"] .text-slate-300 { color: #475569 !important; }
+html.light [class*="from-[#0c1b3b]"] .text-slate-400 { color: #64748b !important; }
+
+/* Chip buttons inside hero */
+html.light [class*="from-[#0c1b3b]"] button {
+  background-color: rgba(255,255,255,0.80) !important;
+  border-color: rgba(var(--color-accent-300) / 0.40) !important;
+  color: #334155 !important;
+}
+html.light [class*="from-[#0c1b3b]"] button:hover {
+  background-color: rgba(var(--color-accent-50) / 1) !important;
+  border-color: rgba(var(--color-accent-400) / 0.60) !important;
+  color: rgb(var(--color-accent-700)) !important;
+}
+
+/* Ask button stays solid accent */
+html.light [class*="from-[#0c1b3b]"] button.bg-blue-600,
+html.light [class*="from-[#0c1b3b]"] button[class*="bg-blue-6"] {
+  background-color: rgb(var(--color-accent-600)) !important;
+  color: #ffffff !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Dropdowns & Context Menus
+   ========================================================================== */
+
+html.light [class*="bg-[#0e172a]"],
+html.light [class*="bg-[#0c1427]"]:not(.rounded-2xl),
+html.light [class*="bg-[#0f172a]"],
+html.light [class*="bg-[#0a0f1d]"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-dropdown) !important;
+}
+
+/* Dropdown menu items */
+html.light [class*="bg-[#0e172a]"] button:not([class*="text-rose"]),
+html.light [class*="bg-[#0c1427]"] button:not([class*="text-rose"]) {
+  color: #334155 !important;
+}
+html.light [class*="bg-[#0e172a]"] button:hover:not([class*="text-rose"]),
+html.light [class*="bg-[#0c1427]"] button:hover:not([class*="text-rose"]) {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+html.light [class*="bg-[#0e172a]"] button[class*="text-rose"],
+html.light [class*="bg-[#0c1427]"] button[class*="text-rose"] {
+  color: #e11d48 !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Modals
+   ========================================================================== */
+
+/* Modal backdrop */
+html.light [class*="bg-navy-950\/80"],
+html.light [class*="bg-navy-950\/85"] {
+  background-color: rgba(15, 23, 42, 0.40) !important;
+}
+
+/* Modal dialog card */
+html.light [class*="bg-navy-850"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-dropdown) !important;
+}
+
+/* Modal text */
+html.light [class*="bg-navy-850"] h3,
+html.light [class*="bg-navy-850"] p {
+  color: #0f172a !important;
+}
+html.light [class*="bg-navy-850"] .text-slate-300 { color: #475569 !important; }
+html.light [class*="bg-navy-850"] .text-slate-400 { color: #64748b !important; }
+
+/* ==========================================================================
+   LIGHT MODE — Command Palette
+   ========================================================================== */
+
+html.light [class*="bg-[#0b1224]"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: var(--shadow-dropdown) !important;
+}
+html.light [class*="bg-[#0b1224]"] input {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   LIGHT MODE — Toast Notifications
+   ========================================================================== */
+
+html.light [class*="bg-[#0c1427]"][class*="rounded-xl"] {
+  background-color: #ffffff !important;
+  border-color: var(--bd-card) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
+}
+
+/* ==========================================================================
+   NON-THEME UTILITIES (same in dark & light)
+   ========================================================================== */
+
 .glass-panel {
   background: rgba(13, 21, 39, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
 }
 
 .glass-card {
@@ -106,9 +740,9 @@
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(var(--color-accent-500) / 0.12);
 }
-
-.glass-card:hover {
-  border-color: rgba(var(--color-accent-500) / 0.28);
+.glass-card:hover { border-color: rgba(var(--color-accent-500) / 0.28); }
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.92) !important;
 }
 
 .glass-pill {
@@ -116,9 +750,16 @@
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+html.light .glass-pill {
+  background: rgba(255, 255, 255, 0.80) !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
 
 .text-gradient-blue {
-  background: linear-gradient(135deg, rgb(var(--color-accent-400)) 0%, rgb(var(--color-accent-500)) 50%, rgb(var(--color-accent-600)) 100%);
+  background: linear-gradient(135deg,
+    rgb(var(--color-accent-400)) 0%,
+    rgb(var(--color-accent-500)) 50%,
+    rgb(var(--color-accent-600)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -135,9 +776,8 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Document Paper styles */
 .clinical-doc-page {
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px -5px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1);
   background: #ffffff;
   color: #0f172a;
 }
@@ -150,290 +790,42 @@
 }
 
 @keyframes floatSlow {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(0.5deg);
-  }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(-8px) rotate(0.5deg); }
 }
-
 @keyframes floatReverse {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  50% {
-    transform: translateY(6px) rotate(-0.5deg);
-  }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50%       { transform: translateY(6px) rotate(-0.5deg); }
 }
-
-.animate-float {
-  animation: floatSlow 6s ease-in-out infinite;
-}
-
-.animate-float-reverse {
-  animation: floatReverse 7s ease-in-out infinite;
-}
-
 @keyframes pulseSubtle {
-  0%, 100% {
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 0.6;
-  }
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.6; }
 }
 
-.animate-pulse-glow {
-  animation: pulseSubtle 4s ease-in-out infinite;
-}
+.animate-float          { animation: floatSlow    6s ease-in-out infinite; }
+.animate-float-reverse  { animation: floatReverse 7s ease-in-out infinite; }
+.animate-pulse-glow     { animation: pulseSubtle  4s ease-in-out infinite; }
 
-/* ========================================================================= */
-/* LIGHT THEME COMPREHENSIVE STYLING (Active when html has .light or data-theme="light") */
-/* ========================================================================= */
-html.light,
-html.light body {
-  background-color: #f8fafc !important;
-  color: #0f172a !important;
-}
-
-html.light ::-webkit-scrollbar-track {
-  background: #f8fafc;
-}
-html.light ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-}
-html.light ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* Background surfaces */
-html.light .bg-\[\#080d1a\],
-html.light .bg-\[\#060a14\],
-html.light .bg-navy-950,
-html.light .bg-navy-900,
-html.light div.min-h-screen {
-  background-color: #f8fafc !important;
-}
-
-html.light aside,
-html.light .bg-\[\#090e1b\],
-html.light .bg-\[\#090f1f\],
-html.light .bg-\[\#0a0f1d\],
-html.light .bg-\[\#0b1224\] {
-  background-color: #ffffff !important;
-}
-
-html.light header,
-html.light .bg-\[\#090e1b\]\/90,
-html.light .bg-\[\#080d1a\]\/85 {
-  background-color: rgba(255, 255, 255, 0.94) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-}
-
-/* Cards & Elevated Containers */
-html.light .bg-\[\#0c1427\],
-html.light .bg-\[\#0d1527\],
-html.light .bg-\[\#0e172a\],
-html.light .bg-\[\#0b1222\],
-html.light .bg-\[\#0b1122\],
-html.light .bg-\[\#0f172a\],
-html.light .bg-navy-850,
-html.light .bg-navy-800 {
-  background-color: #ffffff !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Wells, table headers, and inner containers */
-html.light .bg-\[\#080d19\],
-html.light .bg-\[\#081022\],
-html.light .bg-\[\#0a1020\],
-html.light .bg-\[\#070b16\],
-html.light .bg-\[\#080d19\]\/80,
-html.light .bg-\[\#0f1d38\]\/80,
-html.light .bg-\[\#090f1f\] {
-  background-color: #f1f5f9 !important;
-}
-
-/* Borders */
-html.light .border-slate-800,
-html.light .border-slate-800\/80,
-html.light .border-slate-800\/70,
-html.light .border-slate-800\/60,
-html.light .border-slate-800\/50,
-html.light .border-slate-800\/40,
-html.light .border-slate-800\/90,
-html.light .border-slate-700,
-html.light .border-slate-700\/80,
-html.light .border-slate-700\/70,
-html.light .border-slate-700\/60,
-html.light .border-slate-700\/50,
-html.light .border-slate-700\/40,
-html.light .border-\[\#1a233a\],
-html.light .border-slate-900 {
-  border-color: #e2e8f0 !important;
-}
-
-/* Text Colors */
-html.light h1:not([class*="text-gradient"]),
-html.light h2:not([class*="text-gradient"]),
-html.light h3,
-html.light h4,
-html.light .font-bold.text-white,
-html.light .font-extrabold.text-white,
-html.light .font-semibold.text-white {
-  color: #0f172a !important;
-}
-
-html.light .text-slate-100,
-html.light .text-slate-200 {
-  color: #1e293b !important;
-}
-
-html.light .text-slate-300 {
-  color: #334155 !important;
-}
-
-html.light .text-slate-400 {
-  color: #64748b !important;
-}
-
-/* Form inputs & controls */
-html.light input:not([type="checkbox"]):not([type="radio"]),
-html.light select,
-html.light textarea {
-  background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-}
-
-html.light input::placeholder,
-html.light textarea::placeholder {
-  color: #94a3b8 !important;
-}
-
-html.light input:focus,
-html.light select:focus,
-html.light textarea:focus {
-  background-color: #ffffff !important;
-  border-color: rgb(var(--color-accent-500)) !important;
-}
-
-/* Ensure buttons with solid accent colors ALWAYS keep crisp white text! */
-html.light button.bg-blue-600,
-html.light button[class*="bg-blue-600"],
-html.light a.bg-blue-600,
-html.light a[class*="bg-blue-600"],
-html.light .bg-blue-600.text-white,
-html.light [class*="bg-blue-600"] .text-white,
-html.light [class*="bg-blue-600"] span {
-  color: #ffffff !important;
-}
-
-/* Inactive nav items in sidebar */
-html.light aside nav a:not(.bg-blue-600) {
-  color: #475569 !important;
-}
-html.light aside nav a:not(.bg-blue-600):hover {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
-}
-html.light aside nav a:not(.bg-blue-600) svg {
-  color: #64748b !important;
-}
-
-/* Hover row states in tables */
-html.light tr:hover {
-  background-color: #f8fafc !important;
-}
-
-/* Sidebar quote container */
-html.light aside .from-\[\#0c1833\] {
-  background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%) !important;
-  border-color: #e2e8f0 !important;
-}
-html.light aside .from-\[\#0c1833\] p {
-  color: #334155 !important;
-}
-
-/* Dashboard Hero Card in light mode */
-html.light .from-\[\#0c1b3b\] {
-  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #f8fafc 100%) !important;
-  border-color: rgba(var(--color-accent-500) / 0.25) !important;
-  box-shadow: 0 4px 20px -2px rgba(var(--color-accent-500) / 0.08) !important;
-}
-html.light .from-\[\#0c1b3b\] h2 {
-  color: #0f172a !important;
-}
-html.light .from-\[\#0c1b3b\] p {
-  color: #475569 !important;
-}
-
-/* Answer Warning Callout Box */
-html.light .bg-blue-950\/40 {
-  background-color: rgb(var(--color-accent-50)) !important;
-  border-color: rgb(var(--color-accent-200)) !important;
-  color: rgb(var(--color-accent-900)) !important;
-}
-
-/* Modals */
-html.light .bg-navy-950\/80,
-html.light .bg-navy-950\/85 {
-  background-color: rgba(15, 23, 42, 0.45) !important;
-}
-
-/* Chip backgrounds */
-html.light .bg-\[\#0f1d38\]\/80 {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-  color: #334155 !important;
-}
-html.light .bg-\[\#0f1d38\]\/80:hover {
-  background-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-/* ── TEXT SIZE SCALING ─────────────────────────────────────────────────────── */
-/* Scales the root font-size so ALL rem-based Tailwind utilities (text, spacing,
-   padding, gap, border-radius, etc.) adapt proportionally. */
+/* ==========================================================================
+   TEXT SIZE SCALING
+   Root font-size scaling: all rem-based Tailwind utilities adapt
+   ========================================================================== */
 
 :root,
-[data-text-size="default"] {
-  --ui-scale: 1;
-}
+[data-text-size="default"] { --ui-scale: 1; }
+[data-text-size="small"]   { --ui-scale: 0.875; }
+[data-text-size="large"]   { --ui-scale: 1.125; }
+[data-text-size="xl"]      { --ui-scale: 1.25; }
 
-[data-text-size="small"] {
-  --ui-scale: 0.875;
-}
+html { font-size: calc(16px * var(--ui-scale, 1)); }
 
-[data-text-size="large"] {
-  --ui-scale: 1.125;
-}
-
-[data-text-size="xl"] {
-  --ui-scale: 1.25;
-}
-
-html {
-  font-size: calc(16px * var(--ui-scale, 1));
-}
-
-/* ── FONT FAMILY ───────────────────────────────────────────────────────────── */
+/* ==========================================================================
+   FONT FAMILY
+   ========================================================================== */
 
 :root,
-[data-font="inter"] {
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
+[data-font="inter"]   { --font-sans: 'Inter',   system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+[data-font="poppins"] { --font-sans: 'Poppins', system-ui, -apple-system, sans-serif; }
+[data-font="roboto"]  { --font-sans: 'Roboto',  system-ui, -apple-system, sans-serif; }
 
-[data-font="poppins"] {
-  --font-sans: 'Poppins', system-ui, -apple-system, sans-serif;
-}
-
-[data-font="roboto"] {
-  --font-sans: 'Roboto', system-ui, -apple-system, sans-serif;
-}
-
-body {
-  font-family: var(--font-sans) !important;
-}
+body { font-family: var(--font-sans) !important; }

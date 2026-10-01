@@ -30,7 +30,7 @@ export default function AppShell() {
 
   if (isLandingPage) {
     return (
-      <div className="min-h-screen bg-[#080d1a] text-slate-100 flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <ToastContainer />
         <CommandPalette />
         <DocumentViewerModal />
@@ -40,7 +40,7 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080d1a] text-slate-100 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Fixed Sidebar for desktop */}
       <div className="hidden lg:block">
         <Sidebar />
